@@ -6,5 +6,10 @@ export async function getDieselToml(): Promise<string | undefined> {
 
 export async function setDieselToml(value: string): Promise<void> {
   const config = vscode.workspace.getConfiguration("diesel-migration");
-  return config.update("dieselToml", value);
+
+  return config.update(
+    "dieselToml",
+    value,
+    vscode.ConfigurationTarget.Workspace,
+  );
 }

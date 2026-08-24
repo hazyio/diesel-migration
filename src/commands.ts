@@ -1,6 +1,11 @@
 import * as vscode from "vscode";
 import * as config from "./config";
-import { runIfCliInstalled, selectPath, start_extension } from "./utils";
+import {
+  runIfCliInstalled,
+  selectPath,
+  start_extension,
+  useDieselToml,
+} from "./utils";
 import * as diesel from "./utils/diesel";
 
 export function registerCommands(context: vscode.ExtensionContext) {
@@ -8,6 +13,14 @@ export function registerCommands(context: vscode.ExtensionContext) {
   pushCommand(context, "reloadExtension", reload);
   pushCommand(context, "setupMigration", setupMigration);
   pushCommand(context, "setDieselTomlFromContext", setDieselTomlFromContext);
+  pushCommand(context, "resetDatabase", resetDatabase);
+  pushCommand(context, "resetDatabaseFromContext", resetDatabaseFromContext);
+  pushCommand(context, "generateMigration", generateMigration);
+  pushCommand(
+    context,
+    "generateMigrationFromContext",
+    generateMigrationFromContext,
+  );
 }
 
 function pushCommand(
@@ -22,18 +35,16 @@ function pushCommand(
 
 function setDieselToml() {
   runIfCliInstalled(async () => {
-    let tomlPath = await selectPath("Select diesel.toml", undefined, {
-      filters: { "TOML files": ["toml"] },
-    });
+    let tomlPath = await diesel.selectDieselToml();
     if (!tomlPath) {
       return;
     }
-    config.setDieselToml(tomlPath.fsPath);
+    await config.setDieselToml(tomlPath.fsPath);
   });
 }
 function setDieselTomlFromContext(uri: vscode.Uri) {
   runIfCliInstalled(async () => {
-    config.setDieselToml(uri.fsPath);
+    await config.setDieselToml(uri.fsPath);
   });
 }
 
@@ -46,5 +57,37 @@ export async function reload() {
 async function setupMigration() {
   runIfCliInstalled(async () => {
     await diesel.setUpMigration();
+  });
+}
+
+async function resetDatabase() {
+  runIfCliInstalled(async () => {
+    const dieselToml = await useDieselToml();
+    if (!dieselToml) {
+      await diesel.showSelectDieselTomlError();
+      return;
+    }
+    await diesel.resetDatabase(dieselToml.fsPath);
+  });
+}
+async function resetDatabaseFromContext(uri: vscode.Uri) {
+  runIfCliInstalled(async () => {
+    await diesel.resetDatabase(uri.fsPath);
+  });
+}
+
+async function generateMigration() {
+  runIfCliInstalled(async () => {
+    const dieselToml = await useDieselToml();
+    if (!dieselToml) {
+      await diesel.showSelectDieselTomlError();
+      return;
+    }
+    await diesel.generateMigration(dieselToml.fsPath);
+  });
+}
+async function generateMigrationFromContext(uri: vscode.Uri) {
+  runIfCliInstalled(async () => {
+    await diesel.generateMigration(uri.fsPath);
   });
 }

@@ -1,7 +1,7 @@
 import * as TOML from "@iarna/toml";
 import * as vscode from "vscode";
 
-interface DieselTomlConfig {
+export interface DieselTomlConfig {
   print_schema?: {
     file?: string;
     [key: string]: unknown;

@@ -1,25 +1,26 @@
 import { exec } from "child_process";
+import path from "path";
 import { promisify } from "util";
 import * as vscode from "vscode";
 import {
   choiceOperation,
   fileExists,
   getDatabaseUrl,
-  getRootDirectory,
   multiChoiceOperation,
+  runCommandAndReload,
   runCommandInTerminal,
   selectPath,
   start_extension,
 } from ".";
+import { setDieselToml } from "../config";
+import { getCanDoOperations } from "../context";
 import {
   actionableErrorMessage,
   showErrorMessage,
   showInformationMessage,
 } from "./logging";
-import { reload } from "../commands";
-import { getCanDoOperations } from "../context";
 
-const execAsync = promisify(exec);
+export const execAsync = promisify(exec);
 export async function getRootDieselToml(): Promise<vscode.Uri | undefined> {
   const workspaceFolders = vscode.workspace.workspaceFolders;
   if (!workspaceFolders || workspaceFolders.length === 0) {
@@ -54,6 +55,24 @@ export async function showInstallCliError() {
       runWhenSelected: installDieselCli,
     },
   ]);
+}
+export async function showSelectDieselTomlError() {
+  actionableErrorMessage("No diesel.toml found", [
+    {
+      label: "Select diesel.toml",
+      runWhenSelected: selectDieselToml,
+    },
+  ]);
+}
+export async function selectDieselToml(): Promise<vscode.Uri | undefined> {
+  const tomlPath = await selectPath("Select diesel.toml", undefined, {
+    filters: { "TOML files": ["toml"] },
+  });
+  if (!tomlPath) {
+    return;
+  }
+  await setDieselToml(tomlPath.fsPath);
+  return tomlPath;
 }
 
 export async function installDieselCli() {
@@ -96,16 +115,7 @@ export async function installDieselCli() {
   const command = `cargo install diesel_cli --no-default-features --features "${features.join(" ")}"`;
   runCommandInTerminal(command);
 }
-export async function createMigration() {
-  let name = await vscode.window.showInputBox({
-    title: "Migration name",
-    prompt: "Enter the name of the migration",
-    value: "migration",
-  });
-  if (!name) {
-    return;
-  }
-}
+
 export async function setUpMigration() {
   if (getCanDoOperations()) {
     showErrorMessage("You already have a migration");
@@ -129,38 +139,70 @@ export async function setUpMigration() {
   }
 
   const command = `diesel  setup --database-url ${databaseUrl} `;
-  vscode.window.withProgress(
-    {
-      location: vscode.ProgressLocation.Notification,
-      title: "Setting up migration",
-      cancellable: true,
-    },
-    async (progress, token) => {
-      const controller = new AbortController();
-      token.onCancellationRequested(() => {
-        controller.abort();
-      });
-      try {
-        const { stdout, stderr } = await execAsync(command, {
-          signal: controller.signal,
-          cwd: migrationDir.fsPath,
-        });
+  await runCommandAndReload(
+    "Setting up migration",
+    command,
+    migrationDir.fsPath,
+  );
+}
 
-        progress.report({
-          increment: 50,
-          message: "Created, reloading extension",
-        });
-        start_extension();
-        progress.report({ increment: 100, message: "Done" });
-        return;
-      } catch (e: any) {
-        if (e.name === "AbortError") {
-          showInformationMessage("Migration creation aborted");
-        } else {
-          showErrorMessage(`Error while creating migration:\n${e}`);
-        }
-        return;
+export async function resetDatabase(config_path: string) {
+  let databaseUrl = await getDatabaseUrl();
+  if (!databaseUrl) {
+    return;
+  }
+
+  const command = `diesel database reset --database-url ${databaseUrl} --config-file ${config_path}`;
+  console.log("Resetting database");
+  await runCommandAndReload(
+    "Resetting database",
+    command,
+    path.dirname(config_path),
+  );
+}
+
+export async function generateMigration(config_path: string) {
+  let databaseUrl = await getDatabaseUrl();
+  if (!databaseUrl) {
+    return;
+  }
+  const name = await vscode.window.showInputBox({
+    title: "Migration name",
+    prompt: "Enter the name of the migration",
+    value: "",
+    ignoreFocusOut: true,
+    validateInput: (value) => {
+      const trimmed = value.trim();
+
+      if (!trimmed) {
+        return "Migration name cannot be empty";
       }
+
+      if (trimmed.length > 100) {
+        return "Migration name is too long (max 100 characters)";
+      }
+
+      // Diesel convention: snake_case, alphanumeric + underscores only
+      if (!/^[a-z][a-z0-9_]*$/.test(trimmed)) {
+        return "Use lowercase letters, numbers, and underscores only (e.g. create_users_table)";
+      }
+
+      // Filesystem-unsafe characters (belt-and-suspenders, since regex above already excludes these)
+      if (/[<>:"/\\|?*\x00-\x1F]/.test(trimmed)) {
+        return "Name contains characters not allowed in file paths";
+      }
+
+      return null; // valid
     },
+  });
+  if (!name) {
+    return;
+  }
+  const command = `diesel migration generate ${name} --database-url ${databaseUrl} --config-file ${config_path}`;
+  console.log("Generating migration");
+  await runCommandAndReload(
+    "Generating migration",
+    command,
+    path.dirname(config_path),
   );
 }

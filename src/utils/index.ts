@@ -1,15 +1,56 @@
 import * as vscode from "vscode";
 import { getDieselToml } from "../config";
-import { setCanDoOperations } from "../context";
+import { setCanDoOperations, setMigrationDirectory } from "../context";
 import { Choice } from "../gens";
 import * as path from "path";
 import * as dotenv from "dotenv";
 import {
+  execAsync,
   getRootDieselToml,
   isDieselCliInstalled,
   showInstallCliError,
 } from "./diesel";
-import { showErrorMessage } from "./logging";
+import { showErrorMessage, showInformationMessage } from "./logging";
+import { parseDieselToml } from "./toml";
+export async function start_extension() {
+  console.log("start_extension");
+  await vscode.window.withProgress(
+    {
+      location: vscode.ProgressLocation.Window,
+      title: "Loading extension",
+      cancellable: false,
+    },
+    async (progress) => {
+      progress.report({ increment: 10, message: "Checking config" });
+      const configLocation = await useDieselToml();
+      if (!configLocation) {
+        console.log("no config");
+        return;
+      }
+      progress.report({ increment: 50, message: "Checking cli" });
+
+      if (!(await isDieselCliInstalled())) {
+        showErrorMessage("Diesel cli is not installed");
+      }
+      try {
+        progress.report({ increment: 70, message: "Loading config" });
+
+        const parse = await parseDieselToml(configLocation);
+        const buildMigrationDir = path.join(
+          path.dirname(configLocation.fsPath),
+          parse.migrations_directory?.dir ?? "migrations",
+        );
+        setMigrationDirectory(buildMigrationDir);
+        setCanDoOperations(true);
+
+        progress.report({ increment: 100, message: "Done" });
+        console.log("Done loading extension");
+      } catch (e) {
+        showErrorMessage(`An error occurred while loading the config ${e}`);
+      }
+    },
+  );
+}
 export async function fileExists(uri: vscode.Uri): Promise<boolean> {
   try {
     await vscode.workspace.fs.stat(uri);
@@ -17,6 +58,9 @@ export async function fileExists(uri: vscode.Uri): Promise<boolean> {
   } catch {
     return false;
   }
+}
+export async function delay(seconds: number) {
+  return new Promise((resolve) => setTimeout(resolve, seconds * 1000));
 }
 export function isValidDatabaseUrl(value: string): boolean {
   // postgres:// or mysql:// with a proper URL shape
@@ -37,10 +81,7 @@ export function isValidDatabaseUrl(value: string): boolean {
   return false;
 }
 
-export async function start_extension() {
-  loadDieselToml();
-}
-async function useDieselToml(): Promise<vscode.Uri | undefined> {
+export async function useDieselToml(): Promise<vscode.Uri | undefined> {
   const userConfig = await getDieselToml();
   if (userConfig) {
     console.log(`Using user config: ${userConfig}`);
@@ -51,23 +92,8 @@ async function useDieselToml(): Promise<vscode.Uri | undefined> {
     console.log(`Using default config: ${rootConfig}`);
     return rootConfig;
   }
-
+  console.log("no config");
   return undefined;
-}
-
-async function loadDieselToml() {
-  const configLocation = await useDieselToml();
-  if (!configLocation) {
-    return;
-  }
-  if (!isDieselCliInstalled()) {
-    showErrorMessage("Diesel cli is not installed");
-  }
-  try {
-    setCanDoOperations(true);
-  } catch (e) {
-    showErrorMessage("An error occurred while loading the config");
-  }
 }
 
 export async function runCommandInTerminal(command: string) {
@@ -164,29 +190,34 @@ async function getDatabaseUrlFromEnv(
 
 export async function getDatabaseUrl(): Promise<string | undefined> {
   const tomlUri = await useDieselToml();
-
-  // No diesel.toml configured — fall back to prompting the user directly
-  if (!tomlUri) {
-    // No root directory found — fall back to prompting the user directly
-    const rootDirectory = await getRootDirectory();
-    if (!rootDirectory) {
+  if (tomlUri) {
+    // diesel.toml exists — look for a .env file alongside it
+    const envUri = vscode.Uri.joinPath(
+      vscode.Uri.file(path.dirname(tomlUri.fsPath)),
+      ".env",
+    );
+    if (await fileExists(envUri)) {
+      const tryTomlDatabaseUrl = await getDatabaseUrlFromEnv(envUri);
+      if (tryTomlDatabaseUrl) {
+        return tryTomlDatabaseUrl;
+      }
       return promptDatabaseUrl();
     }
-    // try to find .env file
-    const envUri = vscode.Uri.joinPath(rootDirectory, ".env");
-    const databaseUrl = await getDatabaseUrlFromEnv(envUri);
-    if (databaseUrl) {
-      return databaseUrl;
-    }
+  }
+  const rootDirectory = await getRootDirectory();
+  if (!rootDirectory) {
+    // No root directory found — fall back to prompting the user directly
     return promptDatabaseUrl();
   }
+  const rootEnvUri = vscode.Uri.joinPath(rootDirectory, ".env");
 
-  // diesel.toml exists — look for a .env file alongside it
-  const envUri = vscode.Uri.joinPath(
-    vscode.Uri.file(path.dirname(tomlUri.fsPath)),
-    ".env",
-  );
-  return getDatabaseUrlFromEnv(envUri);
+  if (await fileExists(rootEnvUri)) {
+    const tryRootDatabaseUrl = await getDatabaseUrlFromEnv(rootEnvUri);
+    if (tryRootDatabaseUrl) {
+      return tryRootDatabaseUrl;
+    }
+  }
+  return promptDatabaseUrl();
 }
 
 export async function getRootDirectory(): Promise<vscode.Uri | undefined> {
@@ -220,4 +251,46 @@ export async function selectPath(
   });
 
   return result?.[0];
+}
+
+export async function runCommandAndReload(
+  title: string,
+  command: string,
+  cwd: string,
+) {
+  vscode.window.withProgress(
+    {
+      location: vscode.ProgressLocation.Notification,
+      title: title,
+      cancellable: true,
+    },
+    async (progress, token) => {
+      const controller = new AbortController();
+      token.onCancellationRequested(() => {
+        controller.abort();
+      });
+      try {
+        const { stdout, stderr } = await execAsync(command, {
+          signal: controller.signal,
+          cwd: cwd,
+        });
+
+        progress.report({
+          increment: 50,
+          message: "Reloading extension",
+        });
+        start_extension();
+        progress.report({ increment: 100, message: "Done" });
+        showInformationMessage(`Done ${title}`);
+        return;
+      } catch (e: any) {
+        if (e.name === "AbortError") {
+          showInformationMessage(`${title} aborted`);
+        } else {
+          showErrorMessage(`Error while ${title}:\n${e}`);
+        }
+        return;
+      }
+    },
+  );
 }

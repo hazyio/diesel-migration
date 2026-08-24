@@ -1,19 +1,21 @@
 import * as vscode from "vscode";
-let migrationsDirectory = "";
+let migrationsDirectoryName = "";
 let migrations: string[] = [];
 let canDoOperations = false;
 export function setCanDoOperations(value: boolean) {
   canDoOperations = value;
+  setContext("canDoOperations", canDoOperations);
 }
 export function getCanDoOperations(): boolean {
   return canDoOperations;
 }
 export async function setMigrationDirectory(directory: string) {
-  await setContext("migrationDirectory", directory);
-  migrationsDirectory = directory;
+  await setContext("migrationsDirectoryName", directory);
+  migrationsDirectoryName = directory;
+  console.log("setMigrationDirectory", directory);
 }
 export function getMigrationDirectory(): string {
-  return migrationsDirectory;
+  return migrationsDirectoryName;
 }
 
 export async function addMigration(migration: string) {
@@ -25,5 +27,9 @@ export function getMigrations(): string[] {
 }
 
 async function setContext(id: string, value: any) {
-  await vscode.commands.executeCommand("setContext", `rust-buddy.${id}`, value);
+  await vscode.commands.executeCommand(
+    "setContext",
+    `diesel-migration.${id}`,
+    value,
+  );
 }
