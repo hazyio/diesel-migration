@@ -1,8 +1,13 @@
 import { getDieselToml } from "./config";
-import { getRootDieselToml, isDieselCliInstalled } from "./utils/diesel";
+import {
+  getRootDieselToml,
+  isDieselCliInstalled,
+  showInstallCliError,
+} from "./utils/diesel";
 import * as vscode from "vscode";
 import { showErrorMessage } from "./utils/logging";
 import { setCanDoOperations } from "./context";
+import { Choice } from "./gens";
 
 export async function start_extension() {
   loadDieselToml();
@@ -44,13 +49,52 @@ export async function runCommandInTerminal(command: string) {
   terminal.show();
   terminal.sendText(command);
 }
+export async function runIfCliInstalled(callback: () => void) {
+  if (!(await isDieselCliInstalled())) {
+    showInstallCliError();
+    return;
+  }
+  callback();
+}
 
-export async function choiceOperation(
+export async function choiceOperation<T>(
   operation: string,
-  choices: string[],
-  callback: (choice: string) => void,
-) {
-  let ss = vscode.window.showQuickPick(["migrations"], {
-    placeHolder: "Select a migration",
+  choices: { label: string; value: T; description?: string; detail?: string }[],
+): Promise<undefined | T> {
+  const items: Choice<T>[] = choices.map((c) => ({
+    label: c.label,
+    value: c.value,
+    description: c.description,
+    detail: c.detail,
+  }));
+
+  let selected = await vscode.window.showQuickPick(items, {
+    placeHolder: operation,
   });
+  if (selected === undefined) {
+    return undefined;
+  }
+  return selected.value;
+}
+
+export async function multiChoiceOperation<T>(
+  operation: string,
+  choices: { label: string; value: T; description?: string; detail?: string }[],
+): Promise<undefined | T[]> {
+  const items: Choice<T>[] = choices.map((c) => ({
+    label: c.label,
+    description: c.description,
+    detail: c.detail,
+    value: c.value,
+  }));
+
+  const selected = await vscode.window.showQuickPick(items, {
+    placeHolder: operation,
+    canPickMany: true,
+  });
+
+  if (selected === undefined || selected.length === 0) {
+    return undefined;
+  }
+  return selected.map((s) => s.value);
 }
