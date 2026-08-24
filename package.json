@@ -9,11 +9,12 @@
   "categories": [
     "Other"
   ],
+  "icon": "icon.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/hazyio/diesel-migration"
   },
-  "publisher": "hazyio",
+  "publisher": "HazyIo",
   "keywords": [
     "database",
     "diesel",
@@ -21,6 +22,7 @@
     "migration",
     "orm"
   ],
+  "license": "MIT",
   "activationEvents": [],
   "main": "./dist/extension.js",
   "contributes": {
