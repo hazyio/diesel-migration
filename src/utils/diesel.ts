@@ -1,14 +1,23 @@
-import * as vscode from "vscode";
-import { fileExists } from ".";
 import { exec } from "child_process";
 import { promisify } from "util";
+import * as vscode from "vscode";
 import {
   choiceOperation,
+  fileExists,
+  getDatabaseUrl,
+  getRootDirectory,
   multiChoiceOperation,
   runCommandInTerminal,
-} from "../funs";
-import { actionableErrorMessage } from "./logging";
+  selectPath,
+  start_extension,
+} from ".";
+import {
+  actionableErrorMessage,
+  showErrorMessage,
+  showInformationMessage,
+} from "./logging";
 import { reload } from "../commands";
+import { getCanDoOperations } from "../context";
 
 const execAsync = promisify(exec);
 export async function getRootDieselToml(): Promise<vscode.Uri | undefined> {
@@ -30,7 +39,6 @@ export async function getRootDieselToml(): Promise<vscode.Uri | undefined> {
 export async function isDieselCliInstalled(): Promise<boolean> {
   console.log("isDieselCliInstalled");
   try {
-    // TODO: Fix this
     await execAsync("diesel --version");
     console.log("cli installed");
     return true;
@@ -47,7 +55,6 @@ export async function showInstallCliError() {
     },
   ]);
 }
-export async function createMigration() {}
 
 export async function installDieselCli() {
   let backends = await multiChoiceOperation(
@@ -88,4 +95,72 @@ export async function installDieselCli() {
     linkType === "bundled" ? backends.map((b) => `${b}-bundled`) : backends;
   const command = `cargo install diesel_cli --no-default-features --features "${features.join(" ")}"`;
   runCommandInTerminal(command);
+}
+export async function createMigration() {
+  let name = await vscode.window.showInputBox({
+    title: "Migration name",
+    prompt: "Enter the name of the migration",
+    value: "migration",
+  });
+  if (!name) {
+    return;
+  }
+}
+export async function setUpMigration() {
+  if (getCanDoOperations()) {
+    showErrorMessage("You already have a migration");
+    return;
+  }
+
+  let databaseUrl = await getDatabaseUrl();
+  if (!databaseUrl) {
+    return;
+  }
+  let migrationDir = await selectPath(
+    "Select migrations directory",
+    undefined,
+    {
+      canSelectFiles: false,
+      canSelectFolders: true,
+    },
+  );
+  if (!migrationDir) {
+    return;
+  }
+
+  const command = `diesel  setup --database-url ${databaseUrl} `;
+  vscode.window.withProgress(
+    {
+      location: vscode.ProgressLocation.Notification,
+      title: "Setting up migration",
+      cancellable: true,
+    },
+    async (progress, token) => {
+      const controller = new AbortController();
+      token.onCancellationRequested(() => {
+        controller.abort();
+      });
+      try {
+        const { stdout, stderr } = await execAsync(command, {
+          signal: controller.signal,
+          cwd: migrationDir.fsPath,
+        });
+
+        progress.report({
+          increment: 50,
+          message: "Created, reloading extension",
+        });
+        start_extension();
+        progress.report({ increment: 100, message: "Done" });
+        return;
+      } catch (e: any) {
+        if (e.name === "AbortError") {
+          showInformationMessage("Migration creation aborted");
+        } else {
+          showErrorMessage(`Error while creating migration:\n${e}`);
+        }
+        return;
+      }
+    },
+  );
 }

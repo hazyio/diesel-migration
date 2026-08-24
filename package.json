@@ -18,14 +18,33 @@
         "title": "Diesel Migration: Set Diesel Toml Path"
       },
       {
-        "command": "diesel-migration.reload",
-        "title": "Diesel Migration: Reload"
+        "command": "diesel-migration.setDieselTomlFromContext",
+        "title": "Diesel Migration: Set as diesel toml path"
       },
       {
-        "command": "diesel-migration.createMigration",
-        "title": "Diesel Migration: Create Migration"
+        "command": "diesel-migration.reloadExtension",
+        "title": "Diesel Migration: Reload Extension"
+      },
+      {
+        "command": "diesel-migration.setupMigration",
+        "title": "Diesel Migration: Setup Migration"
       }
     ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "diesel-migration.setDieselTomlFromContext",
+          "when": "false"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "diesel-migration.setDieselTomlFromContext",
+          "when": "resourceFilename == diesel.toml",
+          "group": "1_diesel-migration@1"
+        }
+      ]
+    },
     "configuration": {
       "properties": {
         "dieselMigration.dieselTomlPath": {
@@ -63,6 +82,7 @@
     "typescript-eslint": "^8.56.1"
   },
   "dependencies": {
-    "@iarna/toml": "^2.2.5"
+    "@iarna/toml": "^2.2.5",
+    "dotenv": "^17.4.2"
   }
 }
