@@ -1,9 +1,9 @@
+import * as dotenv from "dotenv";
+import * as path from "path";
 import * as vscode from "vscode";
 import { getDieselToml } from "../config";
 import { setCanDoOperations, setMigrationDirectory } from "../context";
 import { Choice } from "../gens";
-import * as path from "path";
-import * as dotenv from "dotenv";
 import {
   execAsync,
   getRootDieselToml,

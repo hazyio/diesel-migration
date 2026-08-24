@@ -9,15 +9,13 @@ import {
   multiChoiceOperation,
   runCommandAndReload,
   runCommandInTerminal,
-  selectPath,
-  start_extension,
+  selectPath
 } from ".";
 import { setDieselToml } from "../config";
 import { getCanDoOperations } from "../context";
 import {
   actionableErrorMessage,
-  showErrorMessage,
-  showInformationMessage,
+  showErrorMessage
 } from "./logging";
 
 export const execAsync = promisify(exec);
