@@ -21,6 +21,7 @@
     "migration",
     "orm"
   ],
+  "license": "MIT",
   "activationEvents": [],
   "main": "./dist/extension.js",
   "contributes": {
