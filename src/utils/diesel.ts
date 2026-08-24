@@ -206,3 +206,78 @@ export async function generateMigration(config_path: string) {
     path.dirname(config_path),
   );
 }
+
+export async function printSchema(config_path: string) {
+  let databaseUrl = await getDatabaseUrl();
+  if (!databaseUrl) {
+    return;
+  }
+
+  const command = `diesel print-schema --database-url ${databaseUrl} --config-file ${config_path}`;
+  console.log("Printing schema");
+  await runCommandAndReload(
+    "Printing schema",
+    command,
+    path.dirname(config_path),
+  );
+}
+
+export async function runMigration(config_path: string) {
+  let databaseUrl = await getDatabaseUrl();
+  if (!databaseUrl) {
+    return;
+  }
+
+  const command = `diesel migration run --database-url ${databaseUrl} --config-file ${config_path}`;
+  console.log("Running migration");
+  await runCommandAndReload(
+    "Running migration",
+    command,
+    path.dirname(config_path),
+  );
+}
+
+export async function revertMigration(config_path: string) {
+  let databaseUrl = await getDatabaseUrl();
+  if (!databaseUrl) {
+    return;
+  }
+
+  const command = `diesel migration revert --database-url ${databaseUrl} --config-file ${config_path}`;
+  console.log("Reverting migration");
+  await runCommandAndReload(
+    "Reverting migration",
+    command,
+    path.dirname(config_path),
+  );
+}
+
+export async function revertAllMigrations(config_path: string) {
+  let databaseUrl = await getDatabaseUrl();
+  if (!databaseUrl) {
+    return;
+  }
+
+  const command = `diesel migration revert --all --database-url ${databaseUrl} --config-file ${config_path}`;
+  console.log("Reverting all migrations");
+  await runCommandAndReload(
+    "Reverting all migrations",
+    command,
+    path.dirname(config_path),
+  );
+}
+
+export async function redoMigration(config_path: string) {
+  let databaseUrl = await getDatabaseUrl();
+  if (!databaseUrl) {
+    return;
+  }
+
+  const command = `diesel migration redo --database-url ${databaseUrl} --config-file ${config_path}`;
+  console.log("Redoing migration");
+  await runCommandAndReload(
+    "Redoing migration",
+    command,
+    path.dirname(config_path),
+  );
+}

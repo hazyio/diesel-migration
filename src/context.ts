@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-let migrationsDirectoryName = "";
+let migrationsDirectory = "";
 let migrations: string[] = [];
 let canDoOperations = false;
 export function setCanDoOperations(value: boolean) {
@@ -10,12 +10,12 @@ export function getCanDoOperations(): boolean {
   return canDoOperations;
 }
 export async function setMigrationDirectory(directory: string) {
-  await setContext("migrationsDirectoryName", directory);
-  migrationsDirectoryName = directory;
+  await setContext("migrationsDirectory", directory);
+  migrationsDirectory = directory;
   console.log("setMigrationDirectory", directory);
 }
 export function getMigrationDirectory(): string {
-  return migrationsDirectoryName;
+  return migrationsDirectory;
 }
 
 export async function addMigration(migration: string) {

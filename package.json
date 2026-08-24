@@ -34,6 +34,26 @@
         "title": "Diesel Migration: Generate migration"
       },
       {
+        "command": "diesel-migration.runMigration",
+        "title": "Diesel Migration: Run migration"
+      },
+      {
+        "command": "diesel-migration.revertMigration",
+        "title": "Diesel Migration: Revert migration"
+      },
+      {
+        "command": "diesel-migration.revertAllMigrations",
+        "title": "Diesel Migration: Revert all migrations"
+      },
+      {
+        "command": "diesel-migration.redoMigration",
+        "title": "Diesel Migration: Redo migration"
+      },
+      {
+        "command": "diesel-migration.printSchema",
+        "title": "Diesel Migration: Print schema"
+      },
+      {
         "command": "diesel-migration.setDieselTomlFromContext",
         "title": "Diesel Migration: Set as diesel toml path"
       },
@@ -44,6 +64,10 @@
       {
         "command": "diesel-migration.generateMigrationFromContext",
         "title": "Diesel Migration: Generate migration"
+      },
+      {
+        "command": "diesel-migration.printSchemaFromContext",
+        "title": "Diesel Migration: Print schema"
       }
     ],
     "menus": {
@@ -63,24 +87,49 @@
       ],
       "explorer/context": [
         {
+          "command": "diesel-migration.setDieselTomlFromContext",
+          "when": "resourceFilename == diesel.toml && !diesel-migration.canDoOperations",
+          "group": "1_diesel-migration@1"
+        },
+        {
+          "command": "diesel-migration.printSchemaFromContext",
+          "when": "resourceFilename == diesel.toml && diesel-migration.canDoOperations",
+          "group": "1_diesel-migration@2"
+        },
+        {
           "command": "diesel-migration.resetDatabaseFromContext",
           "when": "resourceFilename == diesel.toml  && diesel-migration.canDoOperations",
-          "group": "1_diesel-migration@1"
+          "group": "1_diesel-migration@3"
         },
         {
           "command": "diesel-migration.generateMigrationFromContext",
           "when": "resourceFilename == diesel.toml  && diesel-migration.canDoOperations",
-          "group": "1_diesel-migration@2"
+          "group": "1_diesel-migration@4"
         },
         {
-          "command": "diesel-migration.setDieselTomlFromContext",
-          "when": "resourceFilename == diesel.toml && !diesel-migration.canDoOperations",
-          "group": "1_diesel-migration@3"
+          "command": "diesel-migration.runMigration",
+          "when": "explorerResourceIsFolder && diesel-migration.canDoOperations && resourceFilename == migrations",
+          "group": "1_diesel-migration@5"
+        },
+        {
+          "command": "diesel-migration.redoMigration",
+          "when": "explorerResourceIsFolder && diesel-migration.canDoOperations && resourceFilename == migrations",
+          "group": "1_diesel-migration@6"
+        },
+        {
+          "command": "diesel-migration.revertMigration",
+          "when": "explorerResourceIsFolder && diesel-migration.canDoOperations && resourceFilename == migrations",
+          "group": "1_diesel-migration@7"
         },
         {
           "command": "diesel-migration.generateMigration",
           "when": "explorerResourceIsFolder && diesel-migration.canDoOperations && resourceFilename == migrations",
-          "group": "1_diesel-migration@4"
+          "group": "1_diesel-migration@8"
+        },
+        {
+          "command": "diesel-migration.revertAllMigrations",
+          "when": "explorerResourceIsFolder && diesel-migration.canDoOperations && resourceFilename == migrations",
+          "group": "1_diesel-migration@9"
         }
       ]
     },
