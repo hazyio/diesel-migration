@@ -1,6 +1,7 @@
 # Diesel Migration
 
 Manage [Diesel ORM](https://diesel.rs/) migrations directly from VS Code — create, run, and revert migrations without leaving your editor.
+![Demo](media/demo.gif)
 
 ## Features
 
@@ -28,18 +29,18 @@ All commands are also available from the Command Palette (`Ctrl+Shift+P` / `Cmd+
 
 ## Commands
 
-| Command | Description |
-|---|---|
-| `Diesel Migration: Set Diesel Toml Path` | Configure the path to your project's `diesel.toml`. |
-| `Diesel Migration: Reload Extension` | Reload the extension, picking up any configuration changes. |
-| `Diesel Migration: Setup Migration` | Run `diesel setup` — creates the database, migrations table, and default `diesel.toml` if needed. |
-| `Diesel Migration: Reset database` | Drop and recreate the database, then re-run all migrations. |
-| `Diesel Migration: Generate migration` | Create a new migration (`up.sql` / `down.sql`). |
-| `Diesel Migration: Run migration` | Apply all pending migrations. |
-| `Diesel Migration: Revert migration` | Roll back the most recently applied migration. |
-| `Diesel Migration: Revert all migrations` | Roll back every applied migration. |
-| `Diesel Migration: Redo migration` | Revert then re-apply the most recent migration. |
-| `Diesel Migration: Print schema` | Regenerate `schema.rs` from the current database schema. |
+| Command                                   | Description                                                                                       |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `Diesel Migration: Set Diesel Toml Path`  | Configure the path to your project's `diesel.toml`.                                               |
+| `Diesel Migration: Reload Extension`      | Reload the extension, picking up any configuration changes.                                       |
+| `Diesel Migration: Setup Migration`       | Run `diesel setup` — creates the database, migrations table, and default `diesel.toml` if needed. |
+| `Diesel Migration: Reset database`        | Drop and recreate the database, then re-run all migrations.                                       |
+| `Diesel Migration: Generate migration`    | Create a new migration (`up.sql` / `down.sql`).                                                   |
+| `Diesel Migration: Run migration`         | Apply all pending migrations.                                                                     |
+| `Diesel Migration: Revert migration`      | Roll back the most recently applied migration.                                                    |
+| `Diesel Migration: Revert all migrations` | Roll back every applied migration.                                                                |
+| `Diesel Migration: Redo migration`        | Revert then re-apply the most recent migration.                                                   |
+| `Diesel Migration: Print schema`          | Regenerate `schema.rs` from the current database schema.                                          |
 
 Some of the commands above also have context-menu-only variants (e.g. **Set as diesel toml path**, context-menu **Reset database**, **Print schema**, and **Generate migration**) that are triggered by right-clicking `diesel.toml` in the Explorer, rather than through the Command Palette.
 
@@ -48,10 +49,12 @@ Some of the commands above also have context-menu-only variants (e.g. **Set as d
 The extension adds actions to the Explorer's right-click menu based on what you click:
 
 **Right-click `diesel.toml`:**
+
 - If the extension isn't yet configured: **Set as diesel toml path**
 - Once configured: **Print schema**, **Reset database**, **Generate migration**
 
 **Right-click your `migrations` folder:**
+
 - **Run migration**
 - **Redo migration**
 - **Revert migration**
@@ -64,9 +67,9 @@ The extension adds actions to the Explorer's right-click menu based on what you 
 
 This extension contributes the following setting:
 
-| Setting | Type | Default | Description |
-|---|---|---|---|
-| `diesel-migration.dieselToml` | `string` | `""` | Path to `diesel.toml`, relative to the workspace root, if it isn't in the default location. |
+| Setting                       | Type     | Default | Description                                                                                 |
+| ----------------------------- | -------- | ------- | ------------------------------------------------------------------------------------------- |
+| `diesel-migration.dieselToml` | `string` | `""`    | Path to `diesel.toml`, relative to the workspace root, if it isn't in the default location. |
 
 ## Known Limitations
 

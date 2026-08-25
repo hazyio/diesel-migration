@@ -2,14 +2,14 @@
   "name": "diesel-migration",
   "displayName": "Diesel Migration",
   "description": "Manage Diesel ORM migrations directly from VS Code — create, run, and revert migrations without leaving your editor.",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "engines": {
     "vscode": "^1.134.0"
   },
   "categories": [
     "Other"
   ],
-  "icon": "icon.png",
+  "icon": "media/icon.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/hazyio/diesel-migration"
@@ -23,7 +23,9 @@
     "orm"
   ],
   "license": "MIT",
-  "activationEvents": [],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
