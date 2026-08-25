@@ -76,12 +76,6 @@ This extension contributes the following setting:
 - Explorer context-menu actions for the migrations folder rely on a static folder name match (`migrations`) rather than your configured migrations directory, due to a VS Code limitation around dynamic `when`-clause conditions.
 - Multi-root workspaces are not currently supported — the extension operates against a single workspace root.
 
-## Release Notes
-
-### 0.0.1
-
-Initial release: configure `diesel.toml`, and generate, run, revert, redo, and revert-all migrations from the Command Palette or Explorer context menu.
-
 ---
 
 **Enjoy!**
