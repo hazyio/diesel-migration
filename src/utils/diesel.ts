@@ -2,6 +2,9 @@ import { exec } from "child_process";
 import path from "path";
 import { promisify } from "util";
 import * as vscode from "vscode";
+import { writeFileSync } from "fs";
+import { execSync } from "child_process";
+
 import {
   choiceOperation,
   fileExists,
@@ -9,14 +12,18 @@ import {
   multiChoiceOperation,
   runCommandAndReload,
   runCommandInTerminal,
-  selectPath
+  selectPath,
+  start_extension,
 } from ".";
 import { setDieselToml } from "../config";
 import { getCanDoOperations } from "../context";
 import {
   actionableErrorMessage,
-  showErrorMessage
+  actionableInformationMessage,
+  showErrorMessage,
+  showInformationMessage,
 } from "./logging";
+import { parseDieselToml } from "./toml";
 
 export const execAsync = promisify(exec);
 export async function getRootDieselToml(): Promise<vscode.Uri | undefined> {
@@ -210,13 +217,54 @@ export async function printSchema(config_path: string) {
   if (!databaseUrl) {
     return;
   }
-
+  const parsed = await parseDieselToml(vscode.Uri.file(config_path));
+  if (!parsed) {
+    showErrorMessage("Could not parse diesel.toml");
+    return;
+  }
+  const schemaPath = parsed.print_schema?.file;
+  if (!schemaPath) {
+    showErrorMessage("No schema file specified in diesel.toml");
+    return;
+  }
+  const workingDir = path.dirname(config_path);
   const command = `diesel print-schema --database-url ${databaseUrl} --config-file ${config_path}`;
-  console.log("Printing schema");
-  await runCommandAndReload(
-    "Printing schema",
-    command,
-    path.dirname(config_path),
+  console.log("Printing schema", config_path);
+  vscode.window.withProgress(
+    {
+      location: vscode.ProgressLocation.Notification,
+      title: "Printing schema to file",
+      cancellable: true,
+    },
+    async (progress) => {
+      try {
+        const printedSchema = execSync(command, {
+          cwd: workingDir,
+        });
+        const outPath = path.join(workingDir, schemaPath);
+        console.log(`Writing schema to ${outPath}`);
+        writeFileSync(outPath, printedSchema);
+        progress.report({
+          increment: 50,
+          message: "Reloading extension",
+        });
+        start_extension();
+        progress.report({ increment: 100, message: "Done" });
+        actionableInformationMessage(`Schema written to ${outPath}`, [
+          {
+            label: "Open",
+            runWhenSelected: () => {
+              vscode.workspace.openTextDocument(vscode.Uri.file(outPath));
+            },
+          },
+        ]);
+        return;
+      } catch (e: any) {
+        showErrorMessage(`Error while printing schema:\n${e}`);
+
+        return;
+      }
+    },
   );
 }
 
