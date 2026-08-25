@@ -2,7 +2,7 @@
   "name": "diesel-migration",
   "displayName": "Diesel Migration",
   "description": "Manage Diesel ORM migrations directly from VS Code — create, run, and revert migrations without leaving your editor.",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "engines": {
     "vscode": "^1.134.0"
   },
