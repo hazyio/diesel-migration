@@ -4,7 +4,11 @@ All notable changes to the "Diesel Migration" extension will be documented in th
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [0.0.1] - Unreleased
+## [0.0.2] - Released
+
+- Fix activation event
+
+## [0.0.1] - Released
 
 ### Added
 
